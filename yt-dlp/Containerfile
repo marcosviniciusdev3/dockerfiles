@@ -1,0 +1,20 @@
+# Grab the Deno binary
+FROM denoland/deno:bin AS deno-bin
+
+# Use a Debian-based Python image instead of Alpine so Deno can run
+FROM python:3.11-slim
+
+# Install ffmpeg (apt-get instead of apk for Debian)
+RUN apt-get update && apt-get install -y ffmpeg && rm -rf /var/lib/apt/lists/*
+
+# Copy the Deno executable
+COPY --from=deno-bin /deno /usr/local/bin/deno
+
+# Install the latest version of yt-dlp
+RUN pip install --no-cache-dir yt-dlp
+
+# Set up the download directory
+WORKDIR /downloads
+
+# Make yt-dlp the default command
+# ENTRYPOINT ["yt-dlp"]

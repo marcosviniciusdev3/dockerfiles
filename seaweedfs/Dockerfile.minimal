@@ -1,0 +1,11 @@
+FROM golang:alpine3.23 as builder
+
+WORKDIR /src
+RUN apk update && apk add --no-cache git make
+RUN git clone https://github.com/seaweedfs/seaweedfs.git
+RUN cd seaweedfs && git checkout 0e9f70215296cf5f3e85c1fbe8fe180939bfa0b3
+RUN cd /src/seaweedfs/weed && make install
+
+FROM scratch
+COPY --from=builder /go/bin/weed /weed
+ENTRYPOINT ["/weed"]

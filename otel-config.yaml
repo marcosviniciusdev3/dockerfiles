@@ -1,0 +1,16 @@
+---
+receivers:
+  podman_stats:
+    endpoint: "unix:///run/podman/podman.sock"
+    collection_interval: 10s
+    timeout: 5s
+
+exporters:
+  debug:
+    verbosity: detailed
+
+service:
+  pipelines:
+    metrics:
+      receivers: [podman_stats]
+      exporters: [debug]
