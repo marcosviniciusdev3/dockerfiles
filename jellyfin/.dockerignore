@@ -1,0 +1,12 @@
+.git
+.github
+.gitignore
+.dockerignore
+Dockerfile
+k8s/
+*.md
+*.log
+bin/
+obj/
+node_modules/
+dist/
