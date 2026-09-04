@@ -1,5 +1,7 @@
 FROM fedora:44
 
+SHELL ["/bin/bash", "-o", "pipefail", "-c"]
+
 RUN useradd -m -U -s /bin/bash gemini
 
 WORKDIR /home/gemini
@@ -12,7 +14,7 @@ RUN curl -fsSL https://antigravity.google/cli/install.sh | bash
 
 RUN mkdir -p /home/gemini/.local/bin && \ 
       mv /root/.local/bin/agy /home/gemini/.local/bin && \
-      chown $USER:$USER /home/gemini/.local/bin/agy && \
+      chown "gemini:gemini" /home/gemini/.local/bin/agy && \
       echo "Configuration file stored at /home/gemini/.gemini"
 
 USER gemini

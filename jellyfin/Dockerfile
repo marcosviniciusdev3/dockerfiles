@@ -80,6 +80,8 @@ ENV DOTNET_CLI_TELEMETRY_OPTOUT=1 \
     LANG="en_US.UTF-8" \
     LANGUAGE="en_US:en"
 
+SHELL ["/bin/bash", "-o", "pipefail", "-c"]
+
 # Install minimal runtime dependencies and official jellyfin-ffmpeg
 # Excludes heavy compute runtime stacks (Intel NEO OpenCL, Mali Rockchip, etc.)
 RUN find /etc/apt/ -type f \( -name '*.sources' -o -name 'sources.list' \) -exec sed -i 's|http://deb.debian.org|https://deb.debian.org|g' {} + \
@@ -93,14 +95,12 @@ RUN find /etc/apt/ -type f \( -name '*.sources' -o -name 'sources.list' \) -exec
         libfreetype6 \
     && sed -i -e 's/# en_US.UTF-8 UTF-8/en_US.UTF-8 UTF-8/' /etc/locale.gen \
     && locale-gen \
-    # Add Jellyfin official APT repo for jellyfin-ffmpeg
     && mkdir -p /etc/apt/keyrings \
     && curl -fsSL https://repo.jellyfin.org/jellyfin_team.gpg.key | gpg --dearmor -o /etc/apt/keyrings/jellyfin.gpg \
     && echo "deb [signed-by=/etc/apt/keyrings/jellyfin.gpg] https://repo.jellyfin.org/debian bookworm main" > /etc/apt/sources.list.d/jellyfin.list \
     && apt-get update \
     && apt-get install --no-install-recommends --no-install-suggests --yes \
         ${FFMPEG_PACKAGE} \
-    # Cleanup unnecessary packages & apt caches to keep image minimal
     && apt-get purge --yes --auto-remove curl gnupg \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*

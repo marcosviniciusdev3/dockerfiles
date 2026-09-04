@@ -1,6 +1,6 @@
 FROM hashicorp/terraform:1.15.8 AS terraform
 
-FROM mcr.microsoft.com/azure-cli:latest
+FROM mcr.microsoft.com/azure-cli:2.68.0
 
 LABEL maintainer=github.com/marcosviniciusdev3
 
