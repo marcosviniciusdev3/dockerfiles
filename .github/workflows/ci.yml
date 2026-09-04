@@ -1,0 +1,120 @@
+name: CI - Dockerfile Lint & Test Build
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+  workflow_dispatch:
+    inputs:
+      all_images:
+        description: 'Build all images regardless of git diff'
+        required: false
+        type: boolean
+        default: false
+
+jobs:
+  lint:
+    name: Lint Dockerfiles
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Run Hadolint on Dockerfiles & Containerfiles
+        uses: hadolint/hadolint-action@v3.1.0
+        with:
+          recursive: true
+          failure-threshold: error
+
+  detect-changes:
+    name: Detect Changed Image Directories
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: "${{ steps.set-matrix.outputs.matrix }}"
+      has_changes: "${{ steps.set-matrix.outputs.has_changes }}"
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Identify modified image directories
+        id: set-matrix
+        run: |
+          FORCE_ALL="${{ inputs.all_images }}"
+
+          if [ "$FORCE_ALL" = "true" ]; then
+            echo "Forcing build for all image directories..."
+            DIRS=$(find . -mindepth 2 -maxdepth 2 \( -name "Dockerfile*" -o -name "Containerfile*" \) -exec dirname {} \; | sed 's|^\./||' | sort -u)
+          else
+            if [ "${{ github.event_name }}" = "pull_request" ]; then
+              BASE="origin/${{ github.base_ref }}"
+            else
+              BASE="${{ github.event.before }}"
+              if [ "$BASE" = "0000000000000000000000000000000000000000" ] || [ -z "$BASE" ]; then
+                BASE="HEAD~1"
+              fi
+            fi
+
+            echo "Comparing changes between $BASE and HEAD"
+            CHANGED_DIRS=$(git diff --name-only $BASE HEAD | awk -F/ 'NF>1 {print $1}' | sort -u || true)
+            DIRS=""
+            for d in $CHANGED_DIRS; do
+              if [ -d "$d" ] && ( ls "$d"/Dockerfile* >/dev/null 2>&1 || ls "$d"/Containerfile* >/dev/null 2>&1 ); then
+                DIRS="$DIRS $d"
+              fi
+            done
+          fi
+
+          # Convert space-separated directory list to JSON array
+          MATRIX_JSON=$(echo $DIRS | python3 -c "import sys, json; print(json.dumps([d for d in sys.stdin.read().split() if d]))")
+
+          if [ "$MATRIX_JSON" = "[]" ] || [ -z "$MATRIX_JSON" ]; then
+            echo "No image changes detected."
+            echo "has_changes=false" >> $GITHUB_OUTPUT
+            echo "matrix=[]" >> $GITHUB_OUTPUT
+          else
+            echo "Detected changed image directories: $MATRIX_JSON"
+            echo "has_changes=true" >> $GITHUB_OUTPUT
+            echo "matrix=$MATRIX_JSON" >> $GITHUB_OUTPUT
+          fi
+
+  build:
+    name: Test Build (${{ matrix.dir }})
+    needs: detect-changes
+    if: ${{ needs.detect-changes.outputs.has_changes == 'true' }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        dir: ${{ fromJson(needs.detect-changes.outputs.matrix) }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Determine Dockerfile location
+        id: dockerfile
+        run: |
+          DIR="${{ matrix.dir }}"
+          if [ -f "$DIR/Dockerfile" ]; then
+            echo "path=$DIR/Dockerfile" >> $GITHUB_OUTPUT
+          elif [ -f "$DIR/Containerfile" ]; then
+            echo "path=$DIR/Containerfile" >> $GITHUB_OUTPUT
+          else
+            FILE=$(ls "$DIR"/Dockerfile* "$DIR"/Containerfile* 2>/dev/null | head -n 1)
+            echo "path=$FILE" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Docker Image
+        uses: docker/build-push-action@v6
+        with:
+          context: ./${{ matrix.dir }}
+          file: ${{ steps.dockerfile.outputs.path }}
+          push: false
+          tags: ${{ matrix.dir }}:test
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
