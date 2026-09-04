@@ -1,4 +1,4 @@
-FROM golang:alpine3.23 as builder
+FROM golang:1.24-alpine as builder
 
 WORKDIR /src
 # hadolint ignore=DL3018

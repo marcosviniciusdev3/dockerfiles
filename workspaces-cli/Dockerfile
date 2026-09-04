@@ -5,5 +5,4 @@ RUN printf "[google-cloud-cli]\nname=Google Cloud CLI\nbaseurl=https://packages.
     CLOUDSDK_SKIP_PY_COMPILATION=1 dnf install -y libxcrypt-compat.x86_64 google-cloud-cli && \
     dnf clean all
 
-# Copy build output if present
-COPY ./build/gws* /bin/
+COPY ./build/ /bin/
