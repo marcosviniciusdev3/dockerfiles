@@ -18,7 +18,6 @@ ARG JELLYFIN_WEB_VERSION
 
 WORKDIR /src
 
-# hadolint ignore=DL3018
 RUN apk add --no-cache \
     git \
     python3 \
@@ -81,9 +80,10 @@ ENV DOTNET_CLI_TELEMETRY_OPTOUT=1 \
     LANG="en_US.UTF-8" \
     LANGUAGE="en_US:en"
 
+SHELL ["/bin/bash", "-o", "pipefail", "-c"]
+
 # Install minimal runtime dependencies and official jellyfin-ffmpeg
 # Excludes heavy compute runtime stacks (Intel NEO OpenCL, Mali Rockchip, etc.)
-# hadolint ignore=DL3008,DL4006
 RUN find /etc/apt/ -type f \( -name '*.sources' -o -name 'sources.list' \) -exec sed -i 's|http://deb.debian.org|https://deb.debian.org|g' {} + \
     && apt-get update \
     && apt-get install --no-install-recommends --no-install-suggests --yes \

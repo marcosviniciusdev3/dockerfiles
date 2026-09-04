@@ -1,12 +1,11 @@
-FROM golang:1.24-alpine as builder
+FROM golang:alpine as builder
 
-WORKDIR /src
-# hadolint ignore=DL3018
+WORKDIR /src/seaweedfs
+ENV GOTOOLCHAIN=auto
 RUN apk update && apk add --no-cache git make
-# hadolint ignore=DL3003
-RUN git clone https://github.com/seaweedfs/seaweedfs.git && \
-    cd seaweedfs && git checkout 0e9f70215296cf5f3e85c1fbe8fe180939bfa0b3 && \
-    cd /src/seaweedfs/weed && make install
+RUN git clone https://github.com/seaweedfs/seaweedfs.git . && \
+    git checkout 0e9f70215296cf5f3e85c1fbe8fe180939bfa0b3 && \
+    make -C weed install
 
 FROM scratch
 COPY --from=builder /go/bin/weed /weed

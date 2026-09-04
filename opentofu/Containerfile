@@ -6,7 +6,6 @@ FROM alpine:3.20
 COPY --from=tofu /usr/local/bin/tofu /usr/local/bin/tofu
 
 # Add any other tools or dependencies you need
-# hadolint ignore=DL3018
 RUN apk add --no-cache git curl
 
 # Your application setup
