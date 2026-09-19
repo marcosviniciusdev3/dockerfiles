@@ -1,6 +1,6 @@
 FROM alpine:3.24.1 as downloader
 
-WORKDIR app
+WORKDIR /app
 
 RUN apk update && apk add --no-cache curl tar 
 
