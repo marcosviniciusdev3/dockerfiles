@@ -6,7 +6,8 @@ nodes:
     extraMounts:
     - hostPath: /tmp/kind-storage      # Your physical machine path
       containerPath: /mnt/data        # Path inside the kind node
-  - role: worker
 networking:
   apiServerAddress: "127.0.0.1"
   apiServerPort: 6443
+  disableDefaultCNI: false
+  # kubeProxyMode: "none"
